@@ -587,6 +587,12 @@ class EluLayer(Layer):
         Array of gradients with respect to the layer inputs of shape
         (batch_size, input_dim).
     
+    """
+    return grads_wrt_outputs if x > 0 else grads_wrt_outputs*self.alpha*np.exp(x)
+
+class SeluLayer(Layer):
+    
+    
     
     
     
