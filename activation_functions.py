@@ -7,7 +7,7 @@ Created on Thu Jul 30 14:23:27 2020
 """
 
 # -*- coding: utf-8 -*-
-
+print('running scripts')
 import numpy as np
 """Layer definitions."""
 class Layer(object):
@@ -58,7 +58,7 @@ class EluLayer(Layer):
         
         Args:
             inputs: Array of layer inputs of shape (batch_size, input_dim).
-                    Slope known as 'alpha' which is usually b/w 0.1-0.3.
+                    Slope known as 'alpha'.
         Returns:
             outputs: Array of layer outputs of shape (batch_size, output_dim).
         
@@ -86,7 +86,7 @@ class EluLayer(Layer):
             (batch_size, input_dim).
         
         """
-    return grads_wrt_outputs if inputs > 0 else grads_wrt_outputs*self.alpha*np.exp(inputs)
+        return grads_wrt_outputs if inputs > 0 else grads_wrt_outputs*self.alpha*np.exp(inputs)
 
 class SeluLayer(Layer):
     """Layer implementing a scaled exponential linear unit transformation."""
@@ -112,9 +112,9 @@ class SeluLayer(Layer):
         
         """
     
-    if inputs > 0:
-        return self.scale*inputs
-    return self.scale*self.alpha*(np.exp**inputs - 1)
+        if inputs > 0:
+            return self.scale*inputs
+        return self.scale*self.alpha*(np.exp**inputs - 1)
     
     def bprop(self, inputs, outputs, grads_wrt_outputs):
         """Back propagates gradients through the layer.
@@ -136,7 +136,7 @@ class SeluLayer(Layer):
             (batch_size, input_dim).
         
         """
-    return grads_wrt_outputs*self.scale if inputs > 0 else grads_wrt_outputs*self.scale*self.alpha*np.exp(inputs)
+        return grads_wrt_outputs*self.scale if inputs > 0 else grads_wrt_outputs*self.scale*self.alpha*np.exp(inputs)
 
 class GeluLayer(Layer):
     """Layer implementing a gaussian error linear unit transformation."""
@@ -173,16 +173,54 @@ class GeluLayer(Layer):
         
         Derivative of GELU Layer:
         See attached pdf Latex
-    
-        """
-            return grads_wrt_outputs*(((np.tanh((np.sqrt(2)*(0.044715*inputs**3 + inputs))/np.sqrt(np.pi))+((np.sqrt(2)*inputs*(0.134145*inputs**2+1)*
-                     ((1/np.cosh((np.sqrt(2)*(0.044715*inputs**3+inputs))/np.sqrt(np.pi)))**2))/np.sqrt(np.pi) + 1)))/2)
-
-
-    
         
+        """
+        return grads_wrt_outputs*(((np.tanh((np.sqrt(2)*(0.044715*inputs**3 + inputs))/np.sqrt(np.pi))+((np.sqrt(2)*inputs*(0.134145*inputs**2+1)*((1/np.cosh((np.sqrt(2)*(0.044715*inputs**3+inputs))/np.sqrt(np.pi)))**2))/np.sqrt(np.pi) + 1)))/2)
+
+def IsrlLayer(Layer):
+    """Layer implementing an inverse square root linear unit transformation.""" 
+    def __init__(self, alpha):
+        self.alpha = alpha
     
+    def fprop(self, inputs):
+        """Forward propagates through the inverse square root linear unit layer transformation.
+        
+        For inputs 'x' and outputs 'y' this corresponds to 'y = x' if 
+        x >= 0 and y = x*(1/sqrt(1+alpha*x^2)) if x > 0, where alpha is a hyperparameter which
+        controls the value to which an elu saturates for negative net inputs (see
+        https://openreview.net/pdf?id=HkMCybx0-).
+        
+        Args:
+            inputs: Array of layer inputs of shape (batch_size, input_dim).
+                    Slope known as 'alpha'. 
+        Returns:
+            outputs: Array of layer outputs of shape (batch_size, output_dim).
+        
+        """
+        
+        if inputs >= 0:
+            return inputs
+        return inputs*(1/np.sqrt(1+self.alpha*inputs**2))
     
-    
-    
+    def bprop(self, inputs, outputs, grads_wrt_outputs):
+        """Back propagates gradients through the layer.
+        
+        Given gradients with respect to the outputs of the layer, it calculates the
+        gradients with respect to the layer inputs.
+        
+        Args:
+            inputs: Array of layer inputs of shape (batch_size, input_dim).
+            outputs: Array of layer outputs calculated in forward pass of shape
+            (batch_size, output_dim).
+            grads_wrt_outputs: Array of gradients with respect to the layer
+            outputs of shape (batch_size, output_dim).
+        
+        Returns:
+            Array of gradients with respect to the layer inputs of shape
+            (batch_size, input_dim).
+        
+        """
+        return grads_wrt_outputs if inputs >= 0 else grads_wrt_outputs*(1/np.sqrt(1+self.alpha*inputs**2))**3
+
+print('ran successfully')
 
